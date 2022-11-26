@@ -1,32 +1,27 @@
 <template>
-  <div class="hello">
-    <h1>{{ msg }}</h1>
+  <div class="playing-field">
+    <field-cell v-for="i of 4" :key="i"> </field-cell>
   </div>
 </template>
 
 <script>
+import FieldCell from "@/components/FieldCell";
+
 export default {
-  name: "HelloWorld",
-  props: {
-    msg: String,
+  name: "PlayingField",
+  components: {
+    FieldCell,
   },
 };
 </script>
 
 <!-- Add "scoped" attribute to limit CSS to this component only -->
 <style scoped lang="scss">
-h3 {
-  margin: 40px 0 0;
-}
-ul {
-  list-style-type: none;
-  padding: 0;
-}
-li {
-  display: inline-block;
-  margin: 0 10px;
-}
-a {
-  color: #42b983;
+.playing-field {
+  display: flex;
+  flex-wrap: wrap;
+  width: 120px;
+  background: var(--gray-60white);
+  margin: 20px auto;
 }
 </style>

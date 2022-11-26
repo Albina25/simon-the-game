@@ -1,6 +1,5 @@
 <template>
   <div class="app">
-    <img alt="Vue logo" src="./assets/logo.png" />
     <h1 class="title">Simon The Game</h1>
     <p>Повтори нажатие кнопок в том же порядке</p>
 
@@ -19,12 +18,12 @@ export default {
 };
 </script>
 
-<style lang="scss" scoped>
+<style scoped lang="scss">
 .app {
   margin-top: 40px;
   text-align: center;
   .title {
-    color: black;
+    color: var(--black-light);
   }
 }
 </style>
