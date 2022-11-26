@@ -1,28 +1,30 @@
 <template>
-  <div id="app">
+  <div class="app">
     <img alt="Vue logo" src="./assets/logo.png" />
-    <HelloWorld msg="Welcome to Your Vue.js App" />
+    <h1 class="title">Simon The Game</h1>
+    <p>Повтори нажатие кнопок в том же порядке</p>
+
+    <playing-field></playing-field>
   </div>
 </template>
 
 <script>
-import HelloWorld from "./components/HelloWorld.vue";
+import PlayingField from "./components/PlayingField.vue";
 
 export default {
   name: "App",
   components: {
-    HelloWorld,
+    PlayingField,
   },
 };
 </script>
 
-<style lang="scss">
-#app {
-  font-family: Avenir, Helvetica, Arial, sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+<style lang="scss" scoped>
+.app {
+  margin-top: 40px;
   text-align: center;
-  color: #2c3e50;
-  margin-top: 60px;
+  .title {
+    color: black;
+  }
 }
 </style>
