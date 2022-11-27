@@ -2,7 +2,7 @@
   margin: 0;
   padding: 0;
   box-sizing: border-box;
-  font-family: "Roboto", "Open Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-family: Verdana, Helvetica, Arial, sans-serif;
   font-weight: 550;
 }
 
@@ -52,6 +52,12 @@ button,
 textarea,
 select {
   font: inherit;
+}
+
+button {
+  border: none;
+  outline: none;
+  cursor: pointer;
 }
 
 ::-webkit-scrollbar {

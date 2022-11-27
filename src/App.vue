@@ -1,7 +1,7 @@
 <template>
   <div class="app">
     <h1 class="title">Simon The Game</h1>
-    <p>Повтори нажатие кнопок в том же порядке</p>
+    <p>Запомни и повтори последовательность</p>
 
     <playing-field></playing-field>
   </div>
