@@ -1,5 +1,6 @@
 <template>
   <div class="filed-cell">
+    <audio src="../assets/sound/beep.mp3" id="audio"></audio>
     <span
       :class="[
         'cell',
@@ -7,6 +8,7 @@
           ? 'filed-cell-active'
           : '',
       ]"
+      @click="selectByUser(cell.id)"
     ></span>
   </div>
 </template>
@@ -18,6 +20,14 @@ export default {
     cell: {
       type: Object,
       required: true,
+    },
+  },
+  methods: {
+    selectByUser(id) {
+      let audio = document.getElementById("audio");
+      audio.currentTime = 0;
+      audio.play();
+      this.$emit("select-by-user", id);
     },
   },
 };

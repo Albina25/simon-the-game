@@ -4,12 +4,18 @@
       <p>Рануд: {{ round }}</p>
     </div>
     <div class="field">
-      <field-cell v-for="cell of cells" :cell="cell" :key="cell.id">
+      <field-cell
+        v-for="cell of cells"
+        :cell="cell"
+        :key="cell.id"
+        @select-by-user="selectByUser"
+      >
       </field-cell>
     </div>
     <div class="action">
       <p>{{ textStage }}</p>
       <button
+        :disabled="playing"
         :class="[
           'btn',
           'btn-start',
@@ -65,9 +71,10 @@ export default {
       numberOfCells: 4,
       cells: [],
       delay: 1500,
-      //number: 1,
       sequence: [],
       playing: false,
+      selected: [],
+      gameStatus: null,
     };
   },
   beforeMount() {
@@ -76,9 +83,11 @@ export default {
   computed: {
     textStage() {
       if (this.playing && this.round === this.sequence.length) {
-        return "Повторите последовательность. Если Вы ошибетесь, то игру придется начать с самого начала.";
+        return "Повторите последовательность.";
       } else if (this.playing && this.round !== this.sequence.length) {
         return "Запомните последовательность.";
+      } else if (!this.playing && this.gameStatus === "lost") {
+        return "Вы прогирали. Желаете повторить?";
       } else {
         return 'Нажмите "Старт", чтобы начать.';
       }
@@ -99,7 +108,6 @@ export default {
           id: i,
           randomSelected: false,
           sequence: 0,
-          clicked: false,
         });
       }
     },
@@ -117,6 +125,8 @@ export default {
       }
       this.createPlayingField();
       this.playing = false;
+      this.round = 0;
+      this.gameStatus = null;
     },
     getRandomCells(round) {
       let i = 1;
@@ -136,6 +146,33 @@ export default {
     },
     getRandomInt(max) {
       return Math.floor(Math.random() * max);
+    },
+    selectByUser(id) {
+      if (!this.playing) {
+        return;
+      }
+      this.selected.push(id);
+      this.checkResult();
+    },
+    checkResult() {
+      if (this.selected !== this.sequence) {
+        const lastElement = this.selected[this.selected.length - 1];
+        const index = this.selected.indexOf(lastElement);
+        if (lastElement != this.sequence[index]) {
+          this.playing = false;
+          this.selected = [];
+          this.gameStatus = "lost";
+        }
+        if (
+          lastElement === this.sequence[index] &&
+          this.sequence.length === this.selected.length
+        ) {
+          this.round++;
+          this.selected = [];
+          this.createPlayingField();
+          this.getRandomCells(this.round);
+        }
+      }
     },
   },
 };
