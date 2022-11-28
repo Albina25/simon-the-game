@@ -7,11 +7,10 @@
       <div
         v-for="cell of cells"
         :key="cell.id"
+        :id="cell.id"
         :class="[
           'cell',
-          cell.sequence > 0 && cell.randomSelected === true
-            ? 'filed-cell-active'
-            : '',
+          cell.randomSelected === true ? 'filed-cell-active' : '',
         ]"
         @click="selectByUser(cell.id)"
       ></div>
@@ -19,18 +18,20 @@
     <div class="action">
       <p>{{ textStage }}</p>
       <button
-        :disabled="playing"
+        :disabled="this.gameStatus === 'repeat' || this.gameStatus === 'member'"
         :class="[
           'btn',
           'btn-start',
-          this.playing === true ? 'btn-start_disabled' : '',
+          this.gameStatus === 'waitingStart' || this.gameStatus === 'lost'
+            ? ''
+            : 'btn-start_disabled',
         ]"
         @click="start"
       >
         Старт
       </button>
     </div>
-    <div class="difficult">
+    <div class="difficult-wrapper">
       <button
         :class="[
           'btn',
@@ -54,7 +55,11 @@
         Средний
       </button>
       <button
-        :class="['btn', this.delay === 400 ? 'btn-difficult--active' : '']"
+        :class="[
+          'btn',
+          'btn-difficult',
+          this.delay === 400 ? 'btn-difficult--active' : '',
+        ]"
         id="fast"
         @click="checkDifficult('fast')"
       >
@@ -77,10 +82,12 @@ export default {
       sequence: [],
       playing: false,
       selected: [],
-      gameStatus: "waitingStart", //lost, repeat, member
+      color: ["green", "blue", "yellow", "red"],
+      gameStatus: "waitingStart",
     };
   },
-  beforeMount() {
+  mounted() {
+    this.gameStatus = "waitingStart";
     this.createPlayingField();
   },
   computed: {
@@ -93,7 +100,7 @@ export default {
       } else if (this.gameStatus === "remember") {
         return "Запомните последовательность.";
       } else if (this.gameStatus === "lost") {
-        return "Вы прогирали. Желаете повторить?";
+        return "Вы проиграли. Желаете повторить?";
       } else {
         return 'Нажмите "Старт", чтобы начать.';
       }
@@ -101,21 +108,44 @@ export default {
   },
   methods: {
     start() {
-      this.round++;
+      this.round = 1;
       this.createPlayingField();
-      this.startRound(this.round);
-      this.playing = true;
+      this.nextRound(this.round);
+      this.gameStatus = "remember";
+    },
+    colorize(i) {
+      let color;
+      if (i === 0) {
+        color = "green";
+      } else if (i === 1) {
+        color = "red";
+      } else if (i === 2) {
+        color = "yellow";
+      } else {
+        color = "blue";
+      }
+      return color;
     },
     createPlayingField() {
       this.cells = [];
       this.sequence = [];
       for (let i = 0; i < this.numberOfCells; i++) {
+        const color = this.colorize(i);
+        //this.colorCell(i, color);
         this.cells.push({
-          id: i,
+          id: "cell-" + i,
+          color: color,
           randomSelected: false,
-          sequence: 0,
         });
       }
+      //this.colorCell(this.cells);
+    },
+    colorCell(cells) {
+      cells.forEach((cell) => {
+        const element = document.getElementById(`${cell.id}`);
+        console.log(element);
+        element.classList.add(`cell_${cell.color}`);
+      });
     },
     checkDifficult(difficult) {
       switch (difficult) {
@@ -130,11 +160,10 @@ export default {
           break;
       }
       this.createPlayingField();
-      this.playing = false;
       this.round = 0;
       this.gameStatus = "waitingStart";
     },
-    startRound(round) {
+    nextRound(round) {
       const timeout = this.delay * (round + 1);
       this.getRandomCells(round);
 
@@ -149,7 +178,7 @@ export default {
         const index = this.getRandomInt(this.numberOfCells);
         this.cells[index].randomSelected = true;
         this.sequence.push(this.cells[index].id);
-        this.cells[index].sequence = i;
+        this.turnAudio("audio-beep");
         setTimeout(() => {
           this.cells[index].randomSelected = false;
         }, this.delay - 10);
@@ -167,6 +196,11 @@ export default {
         return;
       }
       this.turnAudio("audio-beep");
+      const element = document.getElementById(`${id}`);
+      element.classList.add("filed-cell-active");
+      setTimeout(() => {
+        element.classList.remove("filed-cell-active");
+      }, this.delay - 10);
       this.selected.push(id);
       this.checkResult();
     },
@@ -180,11 +214,9 @@ export default {
         const lastElement = this.selected[this.selected.length - 1];
         const index = this.selected.indexOf(lastElement);
         if (lastElement != this.sequence[index]) {
-          this.playing = false;
           this.turnAudio("audio-lost");
           this.selected = [];
           this.gameStatus = "lost";
-          console.log("lost");
         }
         if (
           lastElement === this.sequence[index] &&
@@ -193,7 +225,7 @@ export default {
           this.round++;
           this.selected = [];
           this.createPlayingField();
-          this.startRound(this.round);
+          this.nextRound(this.round);
         }
       }
     },
@@ -228,7 +260,7 @@ export default {
   }
 }
 
-.difficult {
+.difficult-wrapper {
   display: flex;
   flex-flow: row wrap;
   justify-content: space-between;
@@ -238,7 +270,7 @@ export default {
 }
 
 .btn-difficult {
-  //margin-right: 15px;
+  margin-bottom: 15px;
   min-width: 130px;
 
   &--active {
@@ -254,6 +286,19 @@ export default {
   display: inline-block;
   cursor: pointer;
   transition: 0.2s;
+
+  /*  &_red {
+    background-color: var(--red);
+  }
+  &_green {
+    background-color: var(--green);
+  }
+  &_yellow {
+    background-color: var(--yellow);
+  }
+  &_blue {
+    background-color: var(--blue);
+  }*/
 }
 
 .filed-cell-active {
@@ -264,6 +309,7 @@ export default {
 
 @keyframes pulse {
   0% {
+    //background-color: var(--gray-20white);
     transform: scale3d(1, 1, 1);
   }
   50% {
@@ -272,6 +318,13 @@ export default {
   100% {
     background-color: var(--green);
     transform: scale3d(1, 1, 1);
+  }
+}
+
+@media (max-width: 450px) {
+  .difficult-wrapper {
+    flex-direction: column;
+    justify-content: center;
   }
 }
 </style>
