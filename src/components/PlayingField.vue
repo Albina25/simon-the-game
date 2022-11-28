@@ -137,7 +137,6 @@ export default {
           color: color,
           randomSelected: false,
         });
-        this.test(this.cell);
       }
       //this.colorCell(this.cells);
     },
