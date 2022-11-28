@@ -2,6 +2,7 @@
   <div class="playing-field">
     <audio src="../assets/sound/beep.mp3" id="audio-beep"></audio>
     <audio src="../assets/sound/lost.mp3" id="audio-lost"></audio>
+    <audio src="../assets/sound/lost.mp3" id="audio-simon"></audio>
     <p>Раунд: {{ formatedRound }}</p>
     <div class="field">
       <div
@@ -131,12 +132,12 @@ export default {
       this.sequence = [];
       for (let i = 0; i < this.numberOfCells; i++) {
         const color = this.colorize(i);
-        //this.colorCell(i, color);
         this.cells.push({
           id: "cell-" + i,
           color: color,
           randomSelected: false,
         });
+        this.test(this.cell);
       }
       //this.colorCell(this.cells);
     },
@@ -178,7 +179,7 @@ export default {
         const index = this.getRandomInt(this.numberOfCells);
         this.cells[index].randomSelected = true;
         this.sequence.push(this.cells[index].id);
-        this.turnAudio("audio-beep");
+        this.turnAudio("audio-simon");
         setTimeout(() => {
           this.cells[index].randomSelected = false;
         }, this.delay - 10);
@@ -200,7 +201,7 @@ export default {
       element.classList.add("filed-cell-active");
       setTimeout(() => {
         element.classList.remove("filed-cell-active");
-      }, this.delay - 10);
+      }, this.delay - 20);
       this.selected.push(id);
       this.checkResult();
     },
