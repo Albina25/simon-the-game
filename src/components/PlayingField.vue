@@ -1,6 +1,7 @@
 <template>
   <div class="playing-field">
-    <audio src="../assets/sound/beep.mp3" id="audio"></audio>
+    <audio src="../assets/sound/beep.mp3" id="audio-beep"></audio>
+    <audio src="../assets/sound/lost.mp3" id="audio-lost"></audio>
     <p>Раунд: {{ formatedRound }}</p>
     <div class="field">
       <div
@@ -36,6 +37,7 @@
           'btn-difficult',
           this.delay === 1500 ? 'btn-difficult--active' : '',
         ]"
+        id="slow"
         @click="checkDifficult('slow')"
       >
         Легий
@@ -46,12 +48,14 @@
           'btn-difficult',
           this.delay === 1000 ? 'btn-difficult--active' : '',
         ]"
+        id="normal"
         @click="checkDifficult('normal')"
       >
         Средний
       </button>
       <button
         :class="['btn', this.delay === 400 ? 'btn-difficult--active' : '']"
+        id="fast"
         @click="checkDifficult('fast')"
       >
         Сложный
@@ -73,7 +77,7 @@ export default {
       sequence: [],
       playing: false,
       selected: [],
-      gameStatus: null,
+      gameStatus: "waitingStart", //lost, repeat, member
     };
   },
   beforeMount() {
@@ -84,11 +88,11 @@ export default {
       return this.round ? this.round : "-";
     },
     textStage() {
-      if (this.playing && this.round === this.sequence.length) {
+      if (this.round === this.sequence.length && this.gameStatus === "repeat") {
         return "Повторите последовательность.";
-      } else if (this.playing && this.round !== this.sequence.length) {
+      } else if (this.gameStatus === "remember") {
         return "Запомните последовательность.";
-      } else if (!this.playing && this.gameStatus === "lost") {
+      } else if (this.gameStatus === "lost") {
         return "Вы прогирали. Желаете повторить?";
       } else {
         return 'Нажмите "Старт", чтобы начать.';
@@ -99,7 +103,7 @@ export default {
     start() {
       this.round++;
       this.createPlayingField();
-      this.getRandomCells(this.round);
+      this.startRound(this.round);
       this.playing = true;
     },
     createPlayingField() {
@@ -128,9 +132,18 @@ export default {
       this.createPlayingField();
       this.playing = false;
       this.round = 0;
-      this.gameStatus = null;
+      this.gameStatus = "waitingStart";
+    },
+    startRound(round) {
+      const timeout = this.delay * (round + 1);
+      this.getRandomCells(round);
+
+      setTimeout(() => {
+        this.gameStatus = "repeat";
+      }, timeout);
     },
     getRandomCells(round) {
+      this.gameStatus = "remember";
       let i = 1;
       let timer = setInterval(() => {
         const index = this.getRandomInt(this.numberOfCells);
@@ -150,14 +163,17 @@ export default {
       return Math.floor(Math.random() * max);
     },
     selectByUser(id) {
-      if (!this.playing) {
+      if (this.gameStatus !== "repeat") {
         return;
       }
-      let audio = document.getElementById("audio");
-      audio.currentTime = 0;
-      audio.play();
+      this.turnAudio("audio-beep");
       this.selected.push(id);
       this.checkResult();
+    },
+    turnAudio(id) {
+      let audio = document.getElementById(id);
+      audio.currentTime = 0;
+      audio.play();
     },
     checkResult() {
       if (this.selected !== this.sequence) {
@@ -165,8 +181,10 @@ export default {
         const index = this.selected.indexOf(lastElement);
         if (lastElement != this.sequence[index]) {
           this.playing = false;
+          this.turnAudio("audio-lost");
           this.selected = [];
           this.gameStatus = "lost";
+          console.log("lost");
         }
         if (
           lastElement === this.sequence[index] &&
@@ -175,7 +193,7 @@ export default {
           this.round++;
           this.selected = [];
           this.createPlayingField();
-          this.getRandomCells(this.round);
+          this.startRound(this.round);
         }
       }
     },
@@ -211,11 +229,17 @@ export default {
 }
 
 .difficult {
+  display: flex;
+  flex-flow: row wrap;
+  justify-content: space-between;
+  max-width: 400px;
+  margin: 0 auto;
   color: var(--gray-20white);
 }
 
 .btn-difficult {
-  margin-right: 15px;
+  //margin-right: 15px;
+  min-width: 130px;
 
   &--active {
     background-color: var(--green);
