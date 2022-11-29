@@ -2,13 +2,14 @@
   <div class="playing-field">
     <audio src="../assets/sound/beep.mp3" id="audio-beep"></audio>
     <audio src="../assets/sound/lost.mp3" id="audio-lost"></audio>
-    <audio src="../assets/sound/lost.mp3" id="audio-simon"></audio>
-    <p>Раунд: {{ formatedRound }}</p>
+    <audio src="../assets/sound/simon.mp3" id="audio-simon"></audio>
+    <p>Раунд: {{ formattedRound }}</p>
     <div class="field">
       <div
         v-for="cell of cells"
         :key="cell.id"
         :id="cell.id"
+        :style="`background-color:${cell.color}`"
         :class="[
           'cell',
           cell.randomSelected === true ? 'filed-cell-active' : '',
@@ -71,20 +72,22 @@
 </template>
 
 <script>
+import { colors } from "../assets/js/colors.js";
+
 export default {
   name: "PlayingField",
 
   data() {
     return {
+      colors: colors,
       round: 0,
-      numberOfCells: 4,
+      fieldSize: 3,
       cells: [],
       delay: 1500,
       sequence: [],
-      playing: false,
       selected: [],
-      color: ["green", "blue", "yellow", "red"],
       gameStatus: "waitingStart",
+      randomIndexColors: [],
     };
   },
   mounted() {
@@ -92,8 +95,11 @@ export default {
     this.createPlayingField();
   },
   computed: {
-    formatedRound() {
+    formattedRound() {
       return this.round ? this.round : "-";
+    },
+    numberOfCells() {
+      return this.fieldSize ? this.fieldSize ** 2 : 4;
     },
     textStage() {
       if (this.round === this.sequence.length && this.gameStatus === "repeat") {
@@ -114,38 +120,34 @@ export default {
       this.nextRound(this.round);
       this.gameStatus = "remember";
     },
-    colorize(i) {
-      let color;
-      if (i === 0) {
-        color = "green";
-      } else if (i === 1) {
-        color = "red";
-      } else if (i === 2) {
-        color = "yellow";
-      } else {
-        color = "blue";
+    colorize(number) {
+      for (let i = 0; i < number; i++) {
+        const index = this.getRandomInt(this.colors.length);
+        if (this.randomIndexColors.includes(index)) {
+          i--;
+        } else {
+          this.randomIndexColors.push(index);
+        }
       }
-      return color;
+      return this.randomIndexColors;
     },
     createPlayingField() {
+      let indexColors;
       this.cells = [];
       this.sequence = [];
+      if (this.randomIndexColors.length === 0) {
+        indexColors = this.colorize(this.numberOfCells);
+      } else {
+        indexColors = this.randomIndexColors;
+      }
       for (let i = 0; i < this.numberOfCells; i++) {
-        const color = this.colorize(i);
+        const index = indexColors[i];
         this.cells.push({
           id: "cell-" + i,
-          color: color,
+          color: colors[index],
           randomSelected: false,
         });
       }
-      //this.colorCell(this.cells);
-    },
-    colorCell(cells) {
-      cells.forEach((cell) => {
-        const element = document.getElementById(`${cell.id}`);
-        console.log(element);
-        element.classList.add(`cell_${cell.color}`);
-      });
     },
     checkDifficult(difficult) {
       switch (difficult) {
@@ -181,7 +183,7 @@ export default {
         this.turnAudio("audio-simon");
         setTimeout(() => {
           this.cells[index].randomSelected = false;
-        }, this.delay - 10);
+        }, this.delay - 200);
         if (i === round) {
           clearInterval(timer);
         }
@@ -200,7 +202,7 @@ export default {
       element.classList.add("filed-cell-active");
       setTimeout(() => {
         element.classList.remove("filed-cell-active");
-      }, this.delay - 20);
+      }, this.delay - 200);
       this.selected.push(id);
       this.checkResult();
     },
@@ -213,7 +215,7 @@ export default {
       if (this.selected !== this.sequence) {
         const lastElement = this.selected[this.selected.length - 1];
         const index = this.selected.indexOf(lastElement);
-        if (lastElement != this.sequence[index]) {
+        if (lastElement !== this.sequence[index]) {
           this.turnAudio("audio-lost");
           this.selected = [];
           this.gameStatus = "lost";
@@ -281,13 +283,12 @@ export default {
 .cell {
   width: 70px;
   height: 70px;
-  background: var(--gray-20white);
   margin: 10px;
   display: inline-block;
   cursor: pointer;
   transition: 0.2s;
 
-  /*  &_red {
+  &_red {
     background-color: var(--red);
   }
   &_green {
@@ -298,25 +299,25 @@ export default {
   }
   &_blue {
     background-color: var(--blue);
-  }*/
+  }
 }
 
 .filed-cell-active {
-  animation-duration: 1s;
-  animation-fill-mode: both;
+  animation-duration: 0.1s;
+  animation-fill-mode: backwards;
   animation-name: pulse;
 }
 
 @keyframes pulse {
   0% {
-    //background-color: var(--gray-20white);
     transform: scale3d(1, 1, 1);
   }
   50% {
     transform: scale3d(1.05, 1.05, 1.05);
   }
   100% {
-    background-color: var(--green);
+    filter: brightness(150%);
+    box-shadow: 1px 3px 11px 8px rgba(37, 37, 37, 0.2);
     transform: scale3d(1, 1, 1);
   }
 }
