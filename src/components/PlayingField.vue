@@ -41,7 +41,7 @@
           this.delay === 1500 ? 'btn-difficult--active' : '',
         ]"
         id="slow"
-        @click="checkDifficult('slow')"
+        @click="changeDifficult('slow')"
       >
         Легий
       </button>
@@ -52,7 +52,7 @@
           this.delay === 1000 ? 'btn-difficult--active' : '',
         ]"
         id="normal"
-        @click="checkDifficult('normal')"
+        @click="changeDifficult('normal')"
       >
         Средний
       </button>
@@ -63,7 +63,7 @@
           this.delay === 400 ? 'btn-difficult--active' : '',
         ]"
         id="fast"
-        @click="checkDifficult('fast')"
+        @click="changeDifficult('fast')"
       >
         Сложный
       </button>
@@ -81,13 +81,14 @@ export default {
     return {
       colors: colors,
       round: 0,
-      fieldSize: 3,
+      fieldSize: 2,
       cells: [],
       delay: 1500,
       sequence: [],
       selected: [],
       gameStatus: "waitingStart",
       randomIndexColors: [],
+      timer: null,
     };
   },
   mounted() {
@@ -108,15 +109,17 @@ export default {
         return "Запомните последовательность.";
       } else if (this.gameStatus === "lost") {
         return "Вы проиграли. Желаете повторить?";
-      } else {
+      } else if (this.gameStatus === "waitingStart") {
         return 'Нажмите "Старт", чтобы начать.';
+      } else {
+        return "Запомните последовательность.";
       }
     },
   },
   methods: {
     start() {
       this.round = 1;
-      this.createPlayingField();
+      this.clearData();
       this.nextRound(this.round);
       this.gameStatus = "remember";
     },
@@ -134,7 +137,7 @@ export default {
     createPlayingField() {
       let indexColors;
       this.cells = [];
-      this.sequence = [];
+      this.clearData();
       if (this.randomIndexColors.length === 0) {
         indexColors = this.colorize(this.numberOfCells);
       } else {
@@ -149,7 +152,8 @@ export default {
         });
       }
     },
-    checkDifficult(difficult) {
+    changeDifficult(difficult) {
+      clearInterval(this.timer);
       switch (difficult) {
         case "slow":
           this.delay = 1500;
@@ -161,22 +165,23 @@ export default {
           this.delay = 400;
           break;
       }
-      this.createPlayingField();
       this.round = 0;
+      this.clearData();
       this.gameStatus = "waitingStart";
     },
     nextRound(round) {
       const timeout = this.delay * (round + 1);
       this.getRandomCells(round);
-
       setTimeout(() => {
-        this.gameStatus = "repeat";
+        this.round && this.round === this.sequence.length
+          ? (this.gameStatus = "repeat")
+          : "";
       }, timeout);
     },
     getRandomCells(round) {
       this.gameStatus = "remember";
       let i = 1;
-      let timer = setInterval(() => {
+      this.timer = setInterval(() => {
         const index = this.getRandomInt(this.numberOfCells);
         this.cells[index].randomSelected = true;
         this.sequence.push(this.cells[index].id);
@@ -185,7 +190,7 @@ export default {
           this.cells[index].randomSelected = false;
         }, this.delay - 200);
         if (i === round) {
-          clearInterval(timer);
+          clearInterval(this.timer);
         }
         i++;
       }, this.delay);
@@ -197,12 +202,13 @@ export default {
       if (this.gameStatus !== "repeat") {
         return;
       }
+
       this.turnAudio("audio-beep");
       const element = document.getElementById(`${id}`);
       element.classList.add("filed-cell-active");
       setTimeout(() => {
         element.classList.remove("filed-cell-active");
-      }, this.delay - 200);
+      }, 200);
       this.selected.push(id);
       this.checkResult();
     },
@@ -211,13 +217,17 @@ export default {
       audio.currentTime = 0;
       audio.play();
     },
+    clearData() {
+      this.selected = [];
+      this.sequence = [];
+    },
     checkResult() {
       if (this.selected !== this.sequence) {
         const lastElement = this.selected[this.selected.length - 1];
         const index = this.selected.indexOf(lastElement);
         if (lastElement !== this.sequence[index]) {
           this.turnAudio("audio-lost");
-          this.selected = [];
+          this.clearData();
           this.gameStatus = "lost";
         }
         if (
@@ -225,7 +235,7 @@ export default {
           this.sequence.length === this.selected.length
         ) {
           this.round++;
-          this.selected = [];
+          this.clearData();
           this.createPlayingField();
           this.nextRound(this.round);
         }
