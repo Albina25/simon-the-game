@@ -4,18 +4,18 @@
     <audio src="../assets/sound/lost.mp3" id="audio-lost"></audio>
     <audio src="../assets/sound/simon.mp3" id="audio-simon"></audio>
     <p>Раунд: {{ formattedRound }}</p>
-    <div class="field">
-      <div
-        v-for="cell of cells"
-        :key="cell.id"
-        :id="cell.id"
-        :style="`background-color:${cell.color}`"
-        :class="[
-          'cell',
-          cell.randomSelected === true ? 'filed-cell-active' : '',
-        ]"
-        @click="selectByUser(cell.id)"
-      ></div>
+    <div class="field" v-if="cells.length > 0">
+      <div v-for="(n, index) in fieldSize" :key="`fieldSize-${index}`">
+        <div v-for="(cell, i) of cells[index]" :key="`cell-${i}`">
+          <div
+            v-if="cell"
+            :id="cell.id"
+            :style="`background-color:${cell.color}`"
+            class="cell"
+            @click="selectByUser(cell.id)"
+          ></div>
+        </div>
+      </div>
     </div>
     <div class="action">
       <p>{{ textStage }}</p>
@@ -91,9 +91,14 @@ export default {
       timer: null,
     };
   },
-  mounted() {
-    this.gameStatus = "waitingStart";
+  created() {
+    this.changeGameStatus("waitingStart");
     this.createPlayingField();
+    for (let i = 0; i < this.fieldSize; i++) {
+      for (let j = 0; j < this.fieldSize; j++) {
+        console.log("11= ", this.cells[i][j].color);
+      }
+    }
   },
   computed: {
     formattedRound() {
@@ -112,16 +117,15 @@ export default {
       } else if (this.gameStatus === "waitingStart") {
         return 'Нажмите "Старт", чтобы начать.';
       } else {
-        return "Запомните последовательность.";
+        return "Продолжаем играть!";
       }
     },
   },
   methods: {
     start() {
-      this.round = 1;
       this.clearData();
-      this.nextRound(this.round);
-      this.gameStatus = "remember";
+      this.nextRound();
+      this.changeGameStatus("remember");
     },
     colorize(number) {
       for (let i = 0; i < number; i++) {
@@ -134,7 +138,7 @@ export default {
       }
       return this.randomIndexColors;
     },
-    createPlayingField() {
+    createPlayingField1() {
       let indexColors;
       this.cells = [];
       this.clearData();
@@ -148,8 +152,29 @@ export default {
         this.cells.push({
           id: "cell-" + i,
           color: colors[index],
-          randomSelected: false,
         });
+      }
+    },
+    createPlayingField() {
+      let indexColors;
+      this.cells = [];
+      this.clearData();
+      if (this.randomIndexColors.length === 0) {
+        indexColors = this.colorize(this.numberOfCells);
+      } else {
+        indexColors = this.randomIndexColors;
+      }
+      let count = 0;
+      for (let i = 0; i < this.fieldSize; i++) {
+        this.cells[i] = [];
+        for (let j = 0; j < this.fieldSize; j++) {
+          const index = indexColors[count];
+          this.cells[i].push({
+            id: "cell-" + count,
+            color: colors[index],
+          });
+          count++;
+        }
       }
     },
     changeDifficult(difficult) {
@@ -167,32 +192,36 @@ export default {
       }
       this.round = 0;
       this.clearData();
-      this.gameStatus = "waitingStart";
+      this.changeGameStatus("waitingStart");
     },
-    nextRound(round) {
-      const timeout = this.delay * (round + 1);
-      this.getRandomCells(round);
-      setTimeout(() => {
-        this.round && this.round === this.sequence.length
-          ? (this.gameStatus = "repeat")
-          : "";
-      }, timeout);
+    changeGameStatus(status) {
+      this.gameStatus = status;
+    },
+    nextRound() {
+      this.round++;
+      this.getRandomCells(this.round);
     },
     getRandomCells(round) {
-      this.gameStatus = "remember";
-      let i = 1;
+      this.changeGameStatus("remember");
+      let count = 1;
       this.timer = setInterval(() => {
-        const index = this.getRandomInt(this.numberOfCells);
-        this.cells[index].randomSelected = true;
-        this.sequence.push(this.cells[index].id);
+        const i = this.getRandomInt(this.fieldSize);
+        const j = this.getRandomInt(this.fieldSize);
+        const id = this.cells[i][j].id;
+        const element = document.getElementById(id);
+        element.classList.add("field-cell-active");
+        console.log("id= ", id);
+        console.log("element= ", element);
+        this.sequence.push(this.cells[i][j].id);
         this.turnAudio("audio-simon");
         setTimeout(() => {
-          this.cells[index].randomSelected = false;
-        }, this.delay - 200);
-        if (i === round) {
+          element.classList.remove("field-cell-active");
+        }, 200);
+        if (count === round && this.round === this.sequence.length) {
           clearInterval(this.timer);
+          this.changeGameStatus("repeat");
         }
-        i++;
+        count++;
       }, this.delay);
     },
     getRandomInt(max) {
@@ -205,9 +234,9 @@ export default {
 
       this.turnAudio("audio-beep");
       const element = document.getElementById(`${id}`);
-      element.classList.add("filed-cell-active");
+      element.classList.add("field-cell-active");
       setTimeout(() => {
-        element.classList.remove("filed-cell-active");
+        element.classList.remove("field-cell-active");
       }, 200);
       this.selected.push(id);
       this.checkResult();
@@ -228,16 +257,15 @@ export default {
         if (lastElement !== this.sequence[index]) {
           this.turnAudio("audio-lost");
           this.clearData();
-          this.gameStatus = "lost";
+          this.changeGameStatus("lost");
         }
         if (
           lastElement === this.sequence[index] &&
           this.sequence.length === this.selected.length
         ) {
-          this.round++;
           this.clearData();
           this.createPlayingField();
-          this.nextRound(this.round);
+          this.nextRound();
         }
       }
     },
@@ -250,10 +278,12 @@ export default {
   margin: 20px auto;
 }
 .field {
-  display: flex;
+  display: inline-flex;
+  text-align: center;
+  justify-content: center;
   flex-wrap: wrap;
-  width: 180px;
-  height: 180px;
+  //width: 180px;
+  //height: 180px;
   background: var(--gray-60white);
   margin: 20px auto;
 }
@@ -312,7 +342,7 @@ export default {
   }
 }
 
-.filed-cell-active {
+.field-cell-active {
   animation-duration: 0.1s;
   animation-fill-mode: backwards;
   animation-name: pulse;
