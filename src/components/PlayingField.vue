@@ -3,6 +3,7 @@
     <audio src="../assets/sound/beep.mp3" id="audio-beep"></audio>
     <audio src="../assets/sound/lost.mp3" id="audio-lost"></audio>
     <audio src="../assets/sound/simon.mp3" id="audio-simon"></audio>
+    <p>Уровень: {{ formattedLevel }}</p>
     <p>Раунд: {{ formattedRound }}</p>
     <div class="field" v-if="cells.length > 0">
       <div v-for="(n, index) in fieldSize" :key="`fieldSize-${index}`">
@@ -81,7 +82,8 @@ export default {
     return {
       colors: colors,
       round: 0,
-      fieldSize: 2,
+      level: 0,
+      fieldSize: 5,
       cells: [],
       delay: 1500,
       sequence: [],
@@ -92,20 +94,17 @@ export default {
     };
   },
   created() {
-    this.changeGameStatus("waitingStart");
     this.createPlayingField();
-    for (let i = 0; i < this.fieldSize; i++) {
-      for (let j = 0; j < this.fieldSize; j++) {
-        console.log("11= ", this.cells[i][j].color);
-      }
-    }
   },
   computed: {
+    formattedLevel() {
+      return this.level ? this.level : "-";
+    },
     formattedRound() {
       return this.round ? this.round : "-";
     },
     numberOfCells() {
-      return this.fieldSize ? this.fieldSize ** 2 : 4;
+      return this.fieldSize ? Math.pow(this.fieldSize, 2) : 4;
     },
     textStage() {
       if (this.round === this.sequence.length && this.gameStatus === "repeat") {
@@ -123,7 +122,12 @@ export default {
   },
   methods: {
     start() {
-      this.clearData();
+      if (this.gameStatus === "lost") {
+        this.fieldSize = 2;
+        this.round = 0;
+        this.randomIndexColors = [];
+      }
+      this.nextLevel();
       this.nextRound();
       this.changeGameStatus("remember");
     },
@@ -138,28 +142,12 @@ export default {
       }
       return this.randomIndexColors;
     },
-    createPlayingField1() {
-      let indexColors;
-      this.cells = [];
-      this.clearData();
-      if (this.randomIndexColors.length === 0) {
-        indexColors = this.colorize(this.numberOfCells);
-      } else {
-        indexColors = this.randomIndexColors;
-      }
-      for (let i = 0; i < this.numberOfCells; i++) {
-        const index = indexColors[i];
-        this.cells.push({
-          id: "cell-" + i,
-          color: colors[index],
-        });
-      }
-    },
     createPlayingField() {
-      let indexColors;
+      let indexColors = [];
       this.cells = [];
       this.clearData();
-      if (this.randomIndexColors.length === 0) {
+      console.log("color = ", this.randomIndexColors);
+      if (this.randomIndexColors.length !== this.numberOfCells) {
         indexColors = this.colorize(this.numberOfCells);
       } else {
         indexColors = this.randomIndexColors;
@@ -197,7 +185,23 @@ export default {
     changeGameStatus(status) {
       this.gameStatus = status;
     },
+    nextLevel() {
+      if (this.level === 5) {
+        this.level = 0;
+        this.fieldSize = 2;
+        this.round = 0;
+        //this.randomIndexColors = [];
+        console.log("111");
+      } else {
+        this.level > 0 ? this.fieldSize++ : 2;
+        this.level++;
+        this.round = 0;
+        //this.randomIndexColors = [];
+        console.log("222");
+      }
+    },
     nextRound() {
+      this.clearData();
       this.round++;
       this.getRandomCells(this.round);
     },
@@ -208,10 +212,9 @@ export default {
         const i = this.getRandomInt(this.fieldSize);
         const j = this.getRandomInt(this.fieldSize);
         const id = this.cells[i][j].id;
+        console.log("id=", id);
         const element = document.getElementById(id);
         element.classList.add("field-cell-active");
-        console.log("id= ", id);
-        console.log("element= ", element);
         this.sequence.push(this.cells[i][j].id);
         this.turnAudio("audio-simon");
         setTimeout(() => {
@@ -256,14 +259,15 @@ export default {
         const index = this.selected.indexOf(lastElement);
         if (lastElement !== this.sequence[index]) {
           this.turnAudio("audio-lost");
-          this.clearData();
           this.changeGameStatus("lost");
         }
         if (
           lastElement === this.sequence[index] &&
           this.sequence.length === this.selected.length
         ) {
-          this.clearData();
+          if (this.round > 10) {
+            this.nextLevel();
+          }
           this.createPlayingField();
           this.nextRound();
         }
@@ -282,8 +286,6 @@ export default {
   text-align: center;
   justify-content: center;
   flex-wrap: wrap;
-  //width: 180px;
-  //height: 180px;
   background: var(--gray-60white);
   margin: 20px auto;
 }
@@ -366,6 +368,10 @@ export default {
   .difficult-wrapper {
     flex-direction: column;
     justify-content: center;
+  }
+  .cell {
+    max-width: 50px;
+    max-height: 50px;
   }
 }
 </style>
