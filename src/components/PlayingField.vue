@@ -83,7 +83,7 @@ export default {
       colors: colors,
       round: 0,
       level: 0,
-      fieldSize: 5,
+      fieldSize: 2,
       cells: [],
       delay: 1500,
       sequence: [],
@@ -132,6 +132,7 @@ export default {
       this.changeGameStatus("remember");
     },
     colorize(number) {
+      this.randomIndexColors = [];
       for (let i = 0; i < number; i++) {
         const index = this.getRandomInt(this.colors.length);
         if (this.randomIndexColors.includes(index)) {
@@ -146,7 +147,6 @@ export default {
       let indexColors = [];
       this.cells = [];
       this.clearData();
-      console.log("color = ", this.randomIndexColors);
       if (this.randomIndexColors.length !== this.numberOfCells) {
         indexColors = this.colorize(this.numberOfCells);
       } else {
@@ -186,18 +186,14 @@ export default {
       this.gameStatus = status;
     },
     nextLevel() {
-      if (this.level === 5) {
-        this.level = 0;
+      if (this.level === 4) {
+        this.level = 1;
         this.fieldSize = 2;
         this.round = 0;
-        //this.randomIndexColors = [];
-        console.log("111");
       } else {
         this.level > 0 ? this.fieldSize++ : 2;
         this.level++;
         this.round = 0;
-        //this.randomIndexColors = [];
-        console.log("222");
       }
     },
     nextRound() {
@@ -212,7 +208,6 @@ export default {
         const i = this.getRandomInt(this.fieldSize);
         const j = this.getRandomInt(this.fieldSize);
         const id = this.cells[i][j].id;
-        console.log("id=", id);
         const element = document.getElementById(id);
         element.classList.add("field-cell-active");
         this.sequence.push(this.cells[i][j].id);
@@ -265,7 +260,7 @@ export default {
           lastElement === this.sequence[index] &&
           this.sequence.length === this.selected.length
         ) {
-          if (this.round > 10) {
+          if (this.round > 2) {
             this.nextLevel();
           }
           this.createPlayingField();
