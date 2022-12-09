@@ -3,8 +3,12 @@
     <audio src="../assets/sound/beep.mp3" id="audio-beep"></audio>
     <audio src="../assets/sound/lost.mp3" id="audio-lost"></audio>
     <audio src="../assets/sound/simon.mp3" id="audio-simon"></audio>
-    <p>Уровень: {{ formattedLevel }}</p>
-    <p>Раунд: {{ formattedRound }}</p>
+
+    <div class="stage_wrapper">
+      <p>Уровень: {{ level }}</p>
+      <p>{{ round }} / 10</p>
+    </div>
+
     <div class="field" v-if="cells.length > 0">
       <div v-for="(n, index) in fieldSize" :key="`fieldSize-${index}`">
         <div v-for="(cell, i) of cells[index]" :key="`cell-${i}`">
@@ -97,12 +101,12 @@ export default {
     this.createPlayingField();
   },
   computed: {
-    formattedLevel() {
+    /*formattedLevel() {
       return this.level ? this.level : "-";
-    },
-    formattedRound() {
-      return this.round ? this.round : "-";
-    },
+    },*/
+    // formattedRound() {
+    //   return this.round ? this.round : "-";
+    // },
     numberOfCells() {
       return this.fieldSize ? Math.pow(this.fieldSize, 2) : 4;
     },
@@ -285,6 +289,17 @@ export default {
   margin: 20px auto;
 }
 
+.stage_wrapper {
+  display: flex;
+  flex-flow: row;
+  margin: auto auto;
+  width: 360px;
+  padding: 0 10px;
+  justify-content: space-between;
+  color: var(--gray-20white);
+  //border: 1px solid lightgray;
+}
+
 .btn {
   border-radius: 3px;
   padding: 5px 25px;
@@ -292,6 +307,7 @@ export default {
 
 .btn-start {
   margin: 15px;
+  padding: 5px 40px;
   color: var(--white);
   background-color: var(--green);
   &_disabled {
@@ -313,7 +329,7 @@ export default {
   min-width: 130px;
 
   &--active {
-    background-color: var(--green);
+    border: 2px solid var(--green);
   }
 }
 
@@ -324,25 +340,17 @@ export default {
   display: inline-block;
   cursor: pointer;
   transition: 0.2s;
-
-  &_red {
-    background-color: var(--red);
-  }
-  &_green {
-    background-color: var(--green);
-  }
-  &_yellow {
-    background-color: var(--yellow);
-  }
-  &_blue {
-    background-color: var(--blue);
-  }
+  border-radius: 5px;
 }
 
 .field-cell-active {
   animation-duration: 0.1s;
   animation-fill-mode: backwards;
   animation-name: pulse;
+}
+
+.action {
+  color: var(--black-light);
 }
 
 @keyframes pulse {

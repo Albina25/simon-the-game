@@ -1,7 +1,9 @@
 <template>
   <div class="app">
-    <h1 class="title">Simon The Game</h1>
-    <p>Запомни и повтори последовательность</p>
+    <div class="game_wrapper">
+      <h1 class="game_title">Simon The Game</h1>
+      <p class="game_direction">Запомни и повтори последовательность</p>
+    </div>
 
     <playing-field></playing-field>
   </div>
@@ -22,8 +24,13 @@ export default {
 .app {
   margin-top: 40px;
   text-align: center;
-  .title {
+
+  .game_wrapper {
     color: var(--black-light);
+  }
+
+  .game_wrapper {
+    background-color: var(--green);
   }
 }
 </style>
