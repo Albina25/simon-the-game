@@ -5,8 +5,8 @@
     <audio src="../assets/sound/simon.mp3" id="audio-simon"></audio>
 
     <div class="stage_wrapper">
-      <p>Уровень: {{ level }}</p>
-      <p>{{ round }} / 10</p>
+      <p>Уровень: {{ currentLevel }}</p>
+      <p>{{ currentRound }} / {{ maxRound }}</p>
     </div>
 
     <div class="field" v-if="cells.length > 0">
@@ -25,7 +25,6 @@
     <div class="action">
       <p>{{ textStage }}</p>
       <button
-        :disabled="this.gameStatus === 'repeat' || this.gameStatus === 'member'"
         :class="[
           'btn',
           'btn-start',
@@ -85,8 +84,8 @@ export default {
   data() {
     return {
       colors: colors,
-      round: 0,
-      level: 0,
+      currentRound: 0,
+      currentLevel: 0,
       fieldSize: 2,
       cells: [],
       delay: 1500,
@@ -95,23 +94,24 @@ export default {
       gameStatus: "waitingStart",
       randomIndexColors: [],
       timer: null,
+      maxRound: 10,
+      maxLevel: 4,
+      minFieldSize: 2,
     };
   },
-  created() {
+  mounted() {
     this.createPlayingField();
+    this.delay = Number(localStorage.getItem("simon-difficult")) || 1500;
   },
   computed: {
-    /*formattedLevel() {
-      return this.level ? this.level : "-";
-    },*/
-    // formattedRound() {
-    //   return this.round ? this.round : "-";
-    // },
     numberOfCells() {
-      return this.fieldSize ? Math.pow(this.fieldSize, 2) : 4;
+      return Math.pow(this.fieldSize, 2);
     },
     textStage() {
-      if (this.round === this.sequence.length && this.gameStatus === "repeat") {
+      if (
+        this.currentRound === this.sequence.length &&
+        this.gameStatus === "repeat"
+      ) {
         return "Повторите последовательность.";
       } else if (this.gameStatus === "remember") {
         return "Запомните последовательность.";
@@ -127,11 +127,10 @@ export default {
   methods: {
     start() {
       if (this.gameStatus === "lost") {
-        this.fieldSize = 2;
-        this.round = 0;
-        this.randomIndexColors = [];
+        this.currentRound = 0;
+      } else {
+        this.nextLevel();
       }
-      this.nextLevel();
       this.nextRound();
       this.changeGameStatus("remember");
     },
@@ -182,44 +181,42 @@ export default {
           this.delay = 400;
           break;
       }
-      this.round = 0;
+      this.currentRound = 0;
+      this.currentLevel = 0;
       this.clearData();
       this.changeGameStatus("waitingStart");
+      localStorage.setItem("simon-difficult", this.delay);
     },
     changeGameStatus(status) {
       this.gameStatus = status;
     },
     nextLevel() {
-      if (this.level === 4) {
-        this.level = 1;
-        this.fieldSize = 2;
-        this.round = 0;
+      if (this.currentLevel === this.maxLevel) {
+        this.currentLevel = 1;
+        this.fieldSize = this.minFieldSize;
+        this.currentRound = 0;
       } else {
-        this.level > 0 ? this.fieldSize++ : 2;
-        this.level++;
-        this.round = 0;
+        this.currentLevel > 0 ? this.fieldSize++ : this.minFieldSize;
+        this.currentLevel++;
+        this.currentRound = 0;
       }
     },
     nextRound() {
       this.clearData();
-      this.round++;
-      this.getRandomCells(this.round);
+      this.currentRound++;
+      this.getRandomCells(this.currentRound);
     },
-    getRandomCells(round) {
+    getRandomCells(number) {
       this.changeGameStatus("remember");
       let count = 1;
       this.timer = setInterval(() => {
         const i = this.getRandomInt(this.fieldSize);
         const j = this.getRandomInt(this.fieldSize);
+        console.log("i-j", i, " - ", j);
         const id = this.cells[i][j].id;
-        const element = document.getElementById(id);
-        element.classList.add("field-cell-active");
         this.sequence.push(this.cells[i][j].id);
-        this.turnAudio("audio-simon");
-        setTimeout(() => {
-          element.classList.remove("field-cell-active");
-        }, 200);
-        if (count === round && this.round === this.sequence.length) {
+        this.activateCell(id, "audio-simon", 200);
+        if (count === number && this.currentRound === this.sequence.length) {
           clearInterval(this.timer);
           this.changeGameStatus("repeat");
         }
@@ -233,13 +230,32 @@ export default {
       if (this.gameStatus !== "repeat") {
         return;
       }
-
-      this.turnAudio("audio-beep");
+      this.activateCell(id, "audio-beep", 100);
+      this.selected.push(id);
+      this.checkResult();
+    },
+    activateCell(id, audioName, delay) {
+      this.turnAudio(audioName);
       const element = document.getElementById(`${id}`);
       element.classList.add("field-cell-active");
       setTimeout(() => {
         element.classList.remove("field-cell-active");
-      }, 200);
+      }, delay);
+    },
+    async selectByUser1(id) {
+      if (this.gameStatus !== "repeat") {
+        return;
+      }
+      const element = document.getElementById(`${id}`);
+      let promise = new Promise((resolve) => {
+        this.turnAudio("audio-beep");
+        element.classList.add("field-cell-active");
+        setTimeout(() => {
+          resolve("field-cell-active");
+        }, 100);
+      });
+      let result = await promise;
+      element.classList.remove(result);
       this.selected.push(id);
       this.checkResult();
     },
@@ -253,23 +269,24 @@ export default {
       this.sequence = [];
     },
     checkResult() {
-      if (this.selected !== this.sequence) {
-        const lastElement = this.selected[this.selected.length - 1];
-        const index = this.selected.indexOf(lastElement);
-        if (lastElement !== this.sequence[index]) {
-          this.turnAudio("audio-lost");
-          this.changeGameStatus("lost");
+      const lastElement = this.selected[this.selected.length - 1];
+      const index = this.selected.indexOf(lastElement);
+      if (
+        lastElement !== this.sequence[index] &&
+        this.selected.length !== this.sequence.length
+      ) {
+        this.turnAudio("audio-lost");
+        this.changeGameStatus("lost");
+      }
+      if (
+        lastElement === this.sequence[index] &&
+        this.sequence.length === this.selected.length
+      ) {
+        if (this.currentRound === this.maxRound) {
+          this.nextLevel();
         }
-        if (
-          lastElement === this.sequence[index] &&
-          this.sequence.length === this.selected.length
-        ) {
-          if (this.round > 2) {
-            this.nextLevel();
-          }
-          this.createPlayingField();
-          this.nextRound();
-        }
+        this.createPlayingField();
+        this.nextRound();
       }
     },
   },
