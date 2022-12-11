@@ -9,9 +9,9 @@
       <p>{{ currentRound }} / {{ maxRound }}</p>
     </div>
 
-    <div class="field" v-if="cells.length > 0">
+    <!--    <div class="field" v-if="cells.length > 0">
       <div v-for="(n, index) in fieldSize" :key="`fieldSize-${index}`">
-        <div v-for="(cell, i) of cells[index]" :key="`cell-${i}`">
+        <div v-for="(cell, i) of cells[index]" :key="`cell-${i}`" class="test">
           <div
             v-if="cell"
             :id="cell.id"
@@ -21,6 +21,24 @@
           >
             <span></span>
           </div>
+        </div>
+      </div>
+    </div>-->
+    <div class="field" v-if="cells.length > 0">
+      <div
+        v-for="(n, index) in fieldSize"
+        :key="`fieldSize-${index}`"
+        class="cells-row"
+      >
+        <div
+          v-for="(cell, i) of cells[index]"
+          :key="`cell-${i}`"
+          :id="cell.id"
+          :style="`background-color:${cell.color}`"
+          class="cell mouse-cursor-gradient-tracking"
+          @click="selectByUser(cell.id)"
+        >
+          <span></span>
         </div>
       </div>
     </div>
@@ -83,7 +101,6 @@ import { colors } from "../assets/js/colors.js";
 
 export default {
   name: "PlayingField",
-
   data() {
     return {
       colors: colors,
@@ -107,20 +124,17 @@ export default {
     this.createPlayingField();
     this.delay = Number(localStorage.getItem("simon-difficult")) || 1500;
     this.$nextTick(() => {
-      document.addEventListener("mouseover", function (e) {
-        const id = e.target.id;
-        if (id) {
-          const cell = document.querySelector(`#${id}`);
-          cell.addEventListener("mousemove", (e) => {
-            let rect = e.target.getBoundingClientRect();
-            let x = e.clientX - rect.left;
-            let y = e.clientY - rect.top;
-            cell.style.setProperty("--x", x + "px");
-            cell.style.setProperty("--y", y + "px");
-          });
-        }
-      });
+      document.addEventListener(
+        "mouseover",
+        this.trackingMouseCursorGradientForCell
+      );
     });
+  },
+  beforeDestroy() {
+    document.removeEventListener(
+      "mouseover",
+      this.trackingMouseCursorGradientForCell
+    );
   },
   computed: {
     numberOfCells() {
@@ -144,6 +158,19 @@ export default {
     },
   },
   methods: {
+    trackingMouseCursorGradientForCell(e) {
+      const id = e.target.id;
+      if (id) {
+        const cell = document.querySelector(`#${id}`);
+        cell.addEventListener("mousemove", (e) => {
+          let rect = e.target.getBoundingClientRect();
+          let x = e.clientX - rect.left;
+          let y = e.clientY - rect.top;
+          cell.style.setProperty("--x", x + "px");
+          cell.style.setProperty("--y", y + "px");
+        });
+      }
+    },
     start() {
       if (this.gameStatus === "lost") {
         this.currentRound = 0;
@@ -231,7 +258,6 @@ export default {
       this.timer = setInterval(() => {
         const i = this.getRandomInt(this.fieldSize);
         const j = this.getRandomInt(this.fieldSize);
-        console.log("i-j", i, " - ", j);
         const id = this.cells[i][j].id;
         this.sequence.push(this.cells[i][j].id);
         this.activateCell(id, "audio-simon", 200);
@@ -256,9 +282,9 @@ export default {
     activateCell(id, audioName, delay) {
       this.turnAudio(audioName);
       const element = document.getElementById(`${id}`);
-      element.classList.add("field-cell-active");
+      element.classList.add("cell--active");
       setTimeout(() => {
-        element.classList.remove("field-cell-active");
+        element.classList.remove("cell--active");
       }, delay);
     },
     async selectByUser1(id) {
@@ -268,9 +294,9 @@ export default {
       const element = document.getElementById(`${id}`);
       let promise = new Promise((resolve) => {
         this.turnAudio("audio-beep");
-        element.classList.add("field-cell-active");
+        element.classList.add("cell--active");
         setTimeout(() => {
-          resolve("field-cell-active");
+          resolve("cell--active");
         }, 100);
       });
       let result = await promise;
@@ -319,6 +345,7 @@ export default {
 .field {
   display: inline-flex;
   text-align: center;
+  flex-direction: column;
   justify-content: center;
   flex-wrap: wrap;
   background: var(--gray-60white);
@@ -333,7 +360,6 @@ export default {
   padding: 0 10px;
   justify-content: space-between;
   color: var(--gray-20white);
-  //border: 1px solid lightgray;
 }
 
 .btn {
@@ -365,10 +391,15 @@ export default {
 .btn-difficult {
   margin-bottom: 15px;
   min-width: 130px;
+  color: var(--black-light);
 
   &--active {
     border: 2px solid var(--green);
   }
+}
+
+.cells-row {
+  height: 90px;
 }
 
 .cell {
@@ -379,14 +410,13 @@ export default {
   cursor: pointer;
   transition: 0.2s;
   border-radius: 5px;
-}
 
-.field-cell-active {
-  animation-duration: 0.1s;
-  animation-fill-mode: backwards;
-  animation-name: pulse;
+  &--active {
+    animation-duration: 0.1s;
+    animation-fill-mode: backwards;
+    animation-name: pulse;
+  }
 }
-
 .action {
   color: var(--black-light);
 }
@@ -413,6 +443,7 @@ export default {
   .cell {
     max-width: 50px;
     max-height: 50px;
+    margin: 5px;
   }
 }
 

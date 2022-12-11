@@ -22,7 +22,6 @@ export default {
 
 <style scoped lang="scss">
 .app {
-  //margin-top: 40px;
   text-align: center;
 
   .game_wrapper {
