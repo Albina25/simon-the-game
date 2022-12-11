@@ -16,15 +16,18 @@
             v-if="cell"
             :id="cell.id"
             :style="`background-color:${cell.color}`"
-            class="cell"
+            class="cell mouse-cursor-gradient-tracking"
             @click="selectByUser(cell.id)"
-          ></div>
+          >
+            <span></span>
+          </div>
         </div>
       </div>
     </div>
     <div class="action">
       <p>{{ textStage }}</p>
       <button
+        :disabled="this.gameStatus === 'repeat' || this.gameStatus === 'member'"
         :class="[
           'btn',
           'btn-start',
@@ -99,9 +102,25 @@ export default {
       minFieldSize: 2,
     };
   },
+
   mounted() {
     this.createPlayingField();
     this.delay = Number(localStorage.getItem("simon-difficult")) || 1500;
+    this.$nextTick(() => {
+      document.addEventListener("mouseover", function (e) {
+        const id = e.target.id;
+        if (id) {
+          const cell = document.querySelector(`#${id}`);
+          cell.addEventListener("mousemove", (e) => {
+            let rect = e.target.getBoundingClientRect();
+            let x = e.clientX - rect.left;
+            let y = e.clientY - rect.top;
+            cell.style.setProperty("--x", x + "px");
+            cell.style.setProperty("--y", y + "px");
+          });
+        }
+      });
+    });
   },
   computed: {
     numberOfCells() {
@@ -323,8 +342,10 @@ export default {
 }
 
 .btn-start {
+  position: relative;
   margin: 15px;
   padding: 5px 40px;
+  overflow: hidden;
   color: var(--white);
   background-color: var(--green);
   &_disabled {
@@ -393,5 +414,38 @@ export default {
     max-width: 50px;
     max-height: 50px;
   }
+}
+
+.mouse-cursor-gradient-tracking {
+  position: relative;
+  background: #7983ff;
+  padding: 0.5rem 1rem;
+  font-size: 1.2rem;
+  border: none;
+  color: white;
+  cursor: pointer;
+  outline: none;
+  overflow: hidden;
+}
+
+.mouse-cursor-gradient-tracking span {
+  position: relative;
+}
+
+.mouse-cursor-gradient-tracking::before {
+  --size: 0;
+  content: "";
+  position: absolute;
+  left: var(--x);
+  top: var(--y);
+  width: var(--size);
+  height: var(--size);
+  background: radial-gradient(circle closest-side, pink, transparent);
+  transform: translate(-50%, -50%);
+  transition: width 0.2s ease, height 0.2s ease;
+}
+
+.mouse-cursor-gradient-tracking:hover::before {
+  --size: 50px;
 }
 </style>
