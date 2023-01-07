@@ -374,8 +374,45 @@ export default {
   overflow: hidden;
   color: var(--white);
   background-color: var(--green);
+
   &_disabled {
     background-color: var(--gray-60white);
+  }
+
+  &::before,
+  &::after {
+    content: "";
+    height: 14px;
+    width: 14px;
+    position: absolute;
+    transition: all 0.6s;
+  }
+
+  &::before {
+    top: 2px;
+    left: 2px;
+    border-top: 1px solid var(--white);
+    border-left: 1px solid var(--white);
+  }
+
+  &::after {
+    bottom: 2px;
+    right: 2px;
+    border-bottom: 1px solid var(--white);
+    border-right: 1px solid var(--white);
+  }
+
+  &:active {
+    background-color: rgba(var(--green-rgb), 0.8);
+  }
+}
+
+@media (any-hover: hover) {
+  .btn-start:hover::before,
+  .btn-start:hover::after {
+    width: 96%;
+    height: 86%;
+    transition: all 0.3s;
   }
 }
 
@@ -396,10 +433,19 @@ export default {
   &--active {
     border: 2px solid var(--green);
   }
+
+  &:hover {
+    background-color: rgba(var(--green-rgb), 0.2);
+  }
+
+  &:active {
+    background-color: rgba(var(--green-rgb), 0.8);
+    border: 2px solid var(--white);
+  }
 }
 
 .cells-row {
-  height: 90px;
+  font-size: 0;
 }
 
 .cell {
@@ -436,6 +482,9 @@ export default {
 }
 
 @media (max-width: 450px) {
+  .btn-difficult {
+    margin: 0 10px 10px;
+  }
   .difficult-wrapper {
     flex-direction: column;
     justify-content: center;
@@ -476,7 +525,9 @@ export default {
   transition: width 0.2s ease, height 0.2s ease;
 }
 
-.mouse-cursor-gradient-tracking:hover::before {
-  --size: 50px;
+@media (any-hover: hover) {
+  .mouse-cursor-gradient-tracking:hover::before {
+    --size: 50px;
+  }
 }
 </style>
