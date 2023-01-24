@@ -6,24 +6,9 @@
 
     <div class="stage_wrapper">
       <p>Уровень: {{ currentLevel }}</p>
-      <p>{{ currentRound }} / {{ maxRound }}</p>
+      <p>{{ currentRound }} / {{ $options.constants.MAX_ROUND }}</p>
     </div>
 
-    <!--    <div class="field" v-if="cells.length > 0">
-      <div v-for="(n, index) in fieldSize" :key="`fieldSize-${index}`">
-        <div v-for="(cell, i) of cells[index]" :key="`cell-${i}`" class="test">
-          <div
-            v-if="cell"
-            :id="cell.id"
-            :style="`background-color:${cell.color}`"
-            class="cell mouse-cursor-gradient-tracking"
-            @click="selectByUser(cell.id)"
-          >
-            <span></span>
-          </div>
-        </div>
-      </div>
-    </div>-->
     <div class="field" v-if="cells.length > 0">
       <div
         v-for="(n, index) in fieldSize"
@@ -45,11 +30,11 @@
     <div class="action">
       <p>{{ textStage }}</p>
       <button
-        :disabled="this.gameStatus === 'repeat' || this.gameStatus === 'member'"
+        :disabled="this.gameStatus === 2 || this.gameStatus === 1"
         :class="[
           'btn',
           'btn-start',
-          this.gameStatus === 'waitingStart' || this.gameStatus === 'lost'
+          this.gameStatus === 0 || this.gameStatus === 3
             ? ''
             : 'btn-start_disabled',
         ]"
@@ -63,18 +48,22 @@
         :class="[
           'btn',
           'btn-difficult',
-          this.delay === 1500 ? 'btn-difficult--active' : '',
+          this.delay === $options.constants.DELAY.SLOW
+            ? 'btn-difficult--active'
+            : '',
         ]"
         id="slow"
         @click="changeDifficult('slow')"
       >
-        Легий
+        Легкий
       </button>
       <button
         :class="[
           'btn',
           'btn-difficult',
-          this.delay === 1000 ? 'btn-difficult--active' : '',
+          this.delay === $options.constants.DELAY.MIDDLE
+            ? 'btn-difficult--active'
+            : '',
         ]"
         id="normal"
         @click="changeDifficult('normal')"
@@ -85,7 +74,9 @@
         :class="[
           'btn',
           'btn-difficult',
-          this.delay === 400 ? 'btn-difficult--active' : '',
+          this.delay === $options.constants.DELAY.FAST
+            ? 'btn-difficult--active'
+            : '',
         ]"
         id="fast"
         @click="changeDifficult('fast')"
@@ -98,9 +89,20 @@
 
 <script>
 import { colors } from "../assets/js/colors.js";
+import {
+  MIN_FIELD_SIZE,
+  MAX_LEVEL,
+  MAX_ROUND,
+  GAME_STATUS,
+  DELAY,
+} from "../assets/js/constants.js";
 
 export default {
   name: "PlayingField",
+  constants: {
+    MAX_ROUND,
+    DELAY,
+  },
   data() {
     return {
       colors: colors,
@@ -108,21 +110,19 @@ export default {
       currentLevel: 0,
       fieldSize: 2,
       cells: [],
-      delay: 1500,
+      delay: DELAY.SLOW,
       sequence: [],
       selected: [],
-      gameStatus: "waitingStart",
+      gameStatus: GAME_STATUS.WAITING_START,
       randomIndexColors: [],
       timer: null,
-      maxRound: 10,
-      maxLevel: 4,
-      minFieldSize: 2,
+      minFieldSize: MIN_FIELD_SIZE,
     };
   },
 
   mounted() {
     this.createPlayingField();
-    this.delay = Number(localStorage.getItem("simon-difficult")) || 1500;
+    this.delay = Number(localStorage.getItem("simon-difficult")) || DELAY.SLOW;
     this.$nextTick(() => {
       document.addEventListener(
         "mouseover",
@@ -143,14 +143,14 @@ export default {
     textStage() {
       if (
         this.currentRound === this.sequence.length &&
-        this.gameStatus === "repeat"
+        this.gameStatus === GAME_STATUS.REPEAT
       ) {
         return "Повторите последовательность.";
-      } else if (this.gameStatus === "remember") {
+      } else if (this.gameStatus === GAME_STATUS.REMEMBER) {
         return "Запомните последовательность.";
-      } else if (this.gameStatus === "lost") {
+      } else if (this.gameStatus === GAME_STATUS.LOST) {
         return "Вы проиграли. Желаете повторить?";
-      } else if (this.gameStatus === "waitingStart") {
+      } else if (this.gameStatus === GAME_STATUS.WAITING_START) {
         return 'Нажмите "Старт", чтобы начать.';
       } else {
         return "Продолжаем играть!";
@@ -172,13 +172,13 @@ export default {
       }
     },
     start() {
-      if (this.gameStatus === "lost") {
+      if (this.gameStatus === GAME_STATUS.LOST) {
         this.currentRound = 0;
       } else {
         this.nextLevel();
       }
       this.nextRound();
-      this.changeGameStatus("remember");
+      this.changeGameStatus(GAME_STATUS.REMEMBER);
     },
     colorize(number) {
       this.randomIndexColors = [];
@@ -218,31 +218,31 @@ export default {
       clearInterval(this.timer);
       switch (difficult) {
         case "slow":
-          this.delay = 1500;
+          this.delay = DELAY.SLOW;
           break;
         case "normal":
-          this.delay = 1000;
+          this.delay = DELAY.MIDDLE;
           break;
         case "fast":
-          this.delay = 400;
+          this.delay = DELAY.FAST;
           break;
       }
       this.currentRound = 0;
       this.currentLevel = 0;
       this.clearData();
-      this.changeGameStatus("waitingStart");
+      this.changeGameStatus(GAME_STATUS.WAITING_START);
       localStorage.setItem("simon-difficult", this.delay);
     },
     changeGameStatus(status) {
       this.gameStatus = status;
     },
     nextLevel() {
-      if (this.currentLevel === this.maxLevel) {
+      if (this.currentLevel === MAX_LEVEL) {
         this.currentLevel = 1;
-        this.fieldSize = this.minFieldSize;
+        this.fieldSize = MIN_FIELD_SIZE;
         this.currentRound = 0;
       } else {
-        this.currentLevel > 0 ? this.fieldSize++ : this.minFieldSize;
+        this.currentLevel > 0 ? this.fieldSize++ : MIN_FIELD_SIZE;
         this.currentLevel++;
         this.currentRound = 0;
       }
@@ -253,7 +253,7 @@ export default {
       this.getRandomCells(this.currentRound);
     },
     getRandomCells(number) {
-      this.changeGameStatus("remember");
+      this.changeGameStatus(GAME_STATUS.REMEMBER);
       let count = 1;
       this.timer = setInterval(() => {
         const i = this.getRandomInt(this.fieldSize);
@@ -263,7 +263,7 @@ export default {
         this.activateCell(id, "audio-simon", 200);
         if (count === number && this.currentRound === this.sequence.length) {
           clearInterval(this.timer);
-          this.changeGameStatus("repeat");
+          this.changeGameStatus(GAME_STATUS.REPEAT);
         }
         count++;
       }, this.delay);
@@ -272,7 +272,7 @@ export default {
       return Math.floor(Math.random() * max);
     },
     selectByUser(id) {
-      if (this.gameStatus !== "repeat") {
+      if (this.gameStatus !== GAME_STATUS.REPEAT) {
         return;
       }
       this.activateCell(id, "audio-beep", 100);
@@ -288,7 +288,7 @@ export default {
       }, delay);
     },
     async selectByUser1(id) {
-      if (this.gameStatus !== "repeat") {
+      if (this.gameStatus !== GAME_STATUS.REPEAT) {
         return;
       }
       const element = document.getElementById(`${id}`);
@@ -321,13 +321,14 @@ export default {
         this.selected.length !== this.sequence.length
       ) {
         this.turnAudio("audio-lost");
-        this.changeGameStatus("lost");
+        this.changeGameStatus(GAME_STATUS.LOST);
       }
       if (
         lastElement === this.sequence[index] &&
         this.sequence.length === this.selected.length
       ) {
-        if (this.currentRound === this.maxRound) {
+        //if (this.currentRound === this.maxRound) {
+        if (this.currentRound === MAX_ROUND) {
           this.nextLevel();
         }
         this.createPlayingField();
@@ -429,6 +430,7 @@ export default {
   margin-bottom: 15px;
   min-width: 130px;
   color: var(--black-light);
+  position: relative;
 
   &--active {
     border: 2px solid var(--green);
@@ -440,7 +442,6 @@ export default {
 
   &:active {
     background-color: rgba(var(--green-rgb), 0.8);
-    border: 2px solid var(--white);
   }
 }
 
